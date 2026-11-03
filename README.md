@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ReserveIT: Classroom and Material Reservation System
 
 Students and faculty request classrooms and shared materials (projectors, extension cords, sound systems) online.
@@ -6,7 +7,7 @@ records penalties for no-shows, damage, and late returns.
 
 **Stack:** Python 3.10+ (Flask), PostgreSQL 16 or newer (built for 18), plain HTML/CSS. No JavaScript build step.
 
-**Group:** BSIT 3-2, COMP 018. Database: `grp01_appdb`.
+**Group:** BSIT 3-2, COMP 018. Database: `ReserveIT`.
 
 ## What it does
 
@@ -132,3 +133,4 @@ reserveit/
 | `PENALTY_THRESHOLD` | Unpaid penalties above this amount (₱) block new requests | `500` |
 
 Problems? See [docs/troubleshooting.md](docs/troubleshooting.md).
+
