@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge, when with context %}
+{% block title %}Reservations{% endblock %}
+{% block content %}
+<h1>{{ 'My reservations' if account.type == 'user' else 'All reservations' }}</h1>
+<form class="panel inline-form" method="get">
+  <div><label for="status">Show</label>
+    <select id="status" name="status"><option value="">All statuses</option>
+      {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if s == selected }}>{{ s|capitalize }}</option>{% endfor %}</select></div>
+  <button class="btn quiet">Filter</button>
+  {% if account.type == 'user' %}<a class="btn" href="{{ url_for('reservations.new') }}">Request a room</a>{% endif %}
+</form>
+{% if reservations %}
+<div class="scroll"><table>
+  <tr><th>When</th><th>Room</th>{% if account.type == 'staff' %}<th>Requested by</th>{% endif %}<th>Purpose</th><th>Status</th><th></th></tr>
+  {% for r in reservations %}<tr>
+    <td>{{ when(r) }}</td><td>{{ r.room_name }}, {{ r.building }}</td>{% if account.type == 'staff' %}<td>{{ r.requester }}</td>{% endif %}
+    <td>{{ r.purpose }}</td><td>{{ badge(r.status) }}</td><td><a href="{{ url_for('reservations.detail', rid=r.reservation_id) }}">View</a></td>
+  </tr>{% endfor %}
+</table></div>
+{% else %}<p class="empty">No reservations match. {% if account.type == 'user' %}Request a room to create your first one.{% endif %}</p>{% endif %}
+{% endblock %}

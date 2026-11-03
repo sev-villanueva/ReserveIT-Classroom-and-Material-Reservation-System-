@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, badge with context %}
+{% block title %}Penalties{% endblock %}
+{% block content %}
+<h1>Penalties</h1>
+<p class="lead">{{ 'Penalties on your reservations. Pay unpaid penalties at the staff office.' if account.type == 'user' else 'No-shows, damaged materials, and late returns. Payment is collected in person and recorded here.' }}</p>
+{% if penalties %}
+<div class="scroll"><table>
+  <tr>{% if account.type == 'staff' %}<th>Requested by</th>{% endif %}<th>Reservation</th><th>Reason</th><th class="num">Amount</th><th>Status</th>{% if account.type == 'staff' %}<th></th>{% endif %}</tr>
+  {% for p in penalties %}<tr>
+    {% if account.type == 'staff' %}<td>{{ p.requester }}</td>{% endif %}
+    <td><a href="{{ url_for('reservations.detail', rid=p.reservation_id) }}">#{{ p.reservation_id }}</a>, {{ p.room_name }}, {{ p.reservation_date.strftime('%b %d, %Y') }}</td>
+    <td>{{ p.reason|replace('_', ' ')|capitalize }}</td><td class="num">₱{{ '{:,.2f}'.format(p.amount) }}</td><td>{{ badge(p.paid_status) }}</td>
+    {% if account.type == 'staff' %}<td>{% if p.paid_status == 'UNPAID' %}<form class="inline" method="post" action="{{ url_for('reservations.mark_paid', pid=p.penalty_id) }}">{{ csrf() }}<button class="btn quiet small">Mark as paid</button></form>{% endif %}</td>{% endif %}
+  </tr>{% endfor %}
+</table></div>
+{% else %}<p class="empty">No penalties recorded.</p>{% endif %}
+{% endblock %}

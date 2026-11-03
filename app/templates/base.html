@@ -1,0 +1,34 @@
+{% from "_macros.html" import csrf with context %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ReserveIT{% endblock %} | ReserveIT</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="bar">
+  <a class="brand" href="{{ url_for('main.dashboard') }}">ReserveIT</a>
+  {% if account %}
+  <nav aria-label="Main">
+    <a href="{{ url_for('main.dashboard') }}">Home</a>
+    <a href="{{ url_for('main.rooms') }}">Rooms</a>
+    <a href="{{ url_for('main.materials') }}">Materials</a>
+    <a href="{{ url_for('reservations.index') }}">{{ 'My reservations' if account.type == 'user' else 'Reservations' }}</a>
+    <a href="{{ url_for('reservations.penalties') }}">Penalties</a>
+    {% if account.type == 'staff' and account.role == 'ADMIN' %}<a href="{{ url_for('admin.index') }}">Admin</a>{% endif %}
+  </nav>
+  <div class="who">
+    <span>{{ account.name }} ({{ account.role|capitalize }})</span>
+    <form method="post" action="{{ url_for('auth.logout') }}">{{ csrf() }}<button class="link">Log out</button></form>
+  </div>
+  {% endif %}
+</header>
+<main>
+  {% for category, message in get_flashed_messages(with_categories=true) %}
+    <p class="flash {{ category }}" role="{{ 'alert' if category == 'error' else 'status' }}">{{ message }}</p>
+  {% endfor %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>
