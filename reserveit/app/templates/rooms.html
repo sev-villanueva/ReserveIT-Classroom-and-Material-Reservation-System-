@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, badge with context %}
+{% block title %}Rooms{% endblock %}
+{% block content %}
+<h1>Rooms</h1>
+<p class="lead">Enter a date and time to see which rooms are free then.</p>
+<form class="panel inline-form" method="get">
+  <div><label for="date">Date</label><input id="date" type="date" name="date" value="{{ date }}"></div>
+  <div><label for="start">From</label><input id="start" type="time" name="start" value="{{ start }}"></div>
+  <div><label for="end">To</label><input id="end" type="time" name="end" value="{{ end }}"></div>
+  <button class="btn">Check availability</button>
+  {% if account.type == 'staff' %}<a class="btn quiet" href="{{ url_for('main.room_new') }}">Add a room</a>{% endif %}
+</form>
+{% if rooms %}
+<div class="plates">
+  {% for rm in rooms %}
+  {% set state = 'closed' if rm.status != 'AVAILABLE' else ('free' if rm.is_free is none or rm.is_free else 'busy') %}
+  <article class="plate {{ state }}">
+    <h3>{{ rm.room_name }}</h3>
+    <p class="where">{{ rm.building }}</p>
+    <p class="meta">{{ rm.room_type|capitalize }}, seats {{ rm.capacity }}</p>
+    {% if rm.status != 'AVAILABLE' %}{{ badge(rm.status) }}
+    {% elif check %}<span class="badge {{ 'available' if rm.is_free else 'rejected' }}">{{ 'Free at that time' if rm.is_free else 'Already booked then' }}</span>
+    {% else %}{{ badge(rm.status) }}{% endif %}
+    {% if account.type == 'staff' %}
+    <div class="actions">
+      <a class="btn quiet small" href="{{ url_for('main.room_edit', room_id=rm.room_id) }}">Edit</a>
+      <form class="inline" method="post" action="{{ url_for('main.room_status', room_id=rm.room_id) }}">{{ csrf() }}<button class="btn quiet small">{{ 'Mark under maintenance' if rm.status == 'AVAILABLE' else 'Mark available' }}</button></form>
+      <form class="inline" method="post" action="{{ url_for('main.room_delete', room_id=rm.room_id) }}" onsubmit="return confirm('Delete {{ rm.room_name }}? This cannot be undone.')">{{ csrf() }}<button class="btn danger small">Delete</button></form>
+    </div>
+    {% endif %}
+  </article>
+  {% endfor %}
+</div>
+{% else %}<p class="empty">No rooms have been added yet.</p>{% endif %}
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf with context %}
+{% block title %}Request a room{% endblock %}
+{% block content %}
+<h1>Request a room</h1>
+<p class="lead">Staff review every request. You will see the result under My reservations.</p>
+<form class="panel" method="post">
+  {{ csrf() }}
+  <label for="room_id">Room</label>
+  <select id="room_id" name="room_id" required>
+    <option value="">Choose a room</option>
+    {% for rm in rooms %}<option value="{{ rm.room_id }}" {{ 'selected' if form.get('room_id') == rm.room_id|string }}>{{ rm.room_name }}, {{ rm.building }} (seats {{ rm.capacity }})</option>{% endfor %}
+  </select>
+  <div class="row">
+    <div><label for="reservation_date">Date</label><input id="reservation_date" name="reservation_date" type="date" required value="{{ form.get('reservation_date', '') }}"></div>
+    <div><label for="start_time">Start time</label><input id="start_time" name="start_time" type="time" required value="{{ form.get('start_time', '') }}"></div>
+    <div><label for="end_time">End time</label><input id="end_time" name="end_time" type="time" required value="{{ form.get('end_time', '') }}"></div>
+  </div>
+  <label for="purpose">Purpose</label>
+  <textarea id="purpose" name="purpose" maxlength="255" required>{{ form.get('purpose', '') }}</textarea>
+  <h2>Materials to borrow (optional)</h2>
+  {% if materials %}
+  <div class="matgrid">
+    {% for m in materials %}<label for="qty_{{ m.material_id }}"><span>{{ m.material_name }} <small>({{ m.available_quantity }} available)</small></span>
+      <input id="qty_{{ m.material_id }}" name="qty_{{ m.material_id }}" type="number" min="0" max="{{ m.available_quantity }}" value="{{ form.get('qty_' ~ m.material_id, '') }}"></label>{% endfor %}
+  </div>
+  {% else %}<p class="hint">No materials are available right now.</p>{% endif %}
+  <div class="actions"><button class="btn">Submit request</button><a class="btn quiet" href="{{ url_for('main.dashboard') }}">Cancel</a></div>
+</form>
+{% endblock %}
