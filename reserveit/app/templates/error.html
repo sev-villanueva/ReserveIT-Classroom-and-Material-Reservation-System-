@@ -1,7 +1,0 @@
-{% extends "base.html" %}
-{% block title %}Error {{ err.code }}{% endblock %}
-{% block content %}
-<h1>{{ 'Page not found' if err.code == 404 else 'Cannot continue' }}</h1>
-<p class="lead">{{ err.description if err.code != 404 else 'That page does not exist or has been removed.' }}</p>
-<a class="btn quiet" href="{{ url_for('main.dashboard') }}">Back to home</a>
-{% endblock %}
