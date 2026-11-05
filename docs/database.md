@@ -1,6 +1,7 @@
-# Database documentation: `grp01_appdb`
+# Database documentation: `ReserveIT`
 
-PostgreSQL 16+ (designed for 18), schema `public`, owner `postgres`. Created by `database/schema.sql`.
+PostgreSQL 16+ (designed for 18), schema `public`, owner `reserveit_owner` (not a superuser). Created by `database/schema.sql`;
+privileges are applied by `database/grants.sql`.
 This implements the approved Activity 2 design: 8 tables, 5 one-to-many relationships, and 1 many-to-many
 relationship resolved by `reservation_material`.
 
@@ -85,9 +86,23 @@ The ERD, data dictionary, and Part 4 "Design Impact" notes in the Activity 2 rep
 `idx_reservation_room`, `idx_reservation_date`, `idx_reservation_status`, `idx_reservation_user`, plus the indexes
 PostgreSQL creates automatically for primary keys, UNIQUE constraints, and the exclusion constraint.
 
+## Ownership and access
+
+The database and all tables are owned by `reserveit_owner`, which is used only for setup. The running app connects as
+`reserveit_app`, which can do only what the application needs. Reporting uses `reserveit_reporter` and maintenance uses
+`reserveit_dba`. The privilege tables and reasons are in [access-requirements.md](access-requirements.md).
+
 ## Backup and restore
 
+The maintenance account has the read access a backup needs:
+
 ```
-pg_dump -U postgres -F c -f reserveit_backup.dump grp01_appdb
-pg_restore -U postgres -d grp01_appdb --clean --if-exists reserveit_backup.dump
+pg_dump -U reserveit_dba -h localhost -F c -f reserveit_backup.dump ReserveIT
+```
+
+Restoring creates tables, so use the owner account on an empty database, then re-apply the privileges:
+
+```
+pg_restore -U reserveit_owner -h localhost -d ReserveIT --clean --if-exists --no-owner reserveit_backup.dump
+python manage.py grants
 ```

@@ -82,14 +82,15 @@ Open <http://127.0.0.1:5000> and log in with a sample account.
 
 ## Sample accounts (testing only)
 
-| Email | Role | Passwords
-|---|---|---|
-| admin@reserveit.test | Administrator | steaven
-| staff@reserveit.test | Staff | chann
-| pat5012@reserveit.test| Staff | villanueva
-| student@reserveit.test | Student | ChangeMe123!
-| faculty@reserveit.test | Faculty | ChangeMe123!
-| student2@reserveit.test | Student (has an unpaid sample penalty) | ChangeMe123!
+All sample accounts use the password `ChangeMe123!`. They exist only in the seed data. Delete them before any real use.
+
+| Email | Role |
+|---|---|
+| admin@reserveit.test | Administrator |
+| staff@reserveit.test | Staff |
+| student@reserveit.test | Student |
+| faculty@reserveit.test | Faculty |
+| student2@reserveit.test | Student (has an unpaid sample penalty) |
 
 ## Verify the install
 

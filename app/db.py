@@ -7,14 +7,14 @@ from psycopg2.extras import RealDictCursor
 from flask import g
 
 
-def connect():
-    """Open a connection using the DB_* values from .env / the environment."""
+def connect(user=None, password=None):
+    """Open a connection. With no arguments it uses the normal app account from .env (DB_USER / DB_PASSWORD)."""
     return psycopg2.connect(
         host=os.getenv("DB_HOST", "localhost"),
         port=os.getenv("DB_PORT", "5432"),
-        dbname=os.getenv("DB_NAME", "grp01_appdb"),
-        user=os.getenv("DB_USER", "postgres"),
-        password=os.getenv("DB_PASSWORD", ""),
+        dbname=os.getenv("DB_NAME", "ReserveIT"),
+        user=user or os.getenv("DB_USER", "reserveit_app"),
+        password=password if password is not None else os.getenv("DB_PASSWORD", ""),
         cursor_factory=RealDictCursor,
     )
 

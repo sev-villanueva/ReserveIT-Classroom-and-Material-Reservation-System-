@@ -1,63 +1,69 @@
 # User roles and PostgreSQL roles
 
-ReserveIT has two layers of "roles". Keep them separate:
+ReserveIT has two layers of roles. Keep them separate:
 
 - **Application roles** decide what a person can do after logging in to the web app. They are stored in the
-  `app_user.role` and `staff.role` columns.
-- **PostgreSQL roles** decide what a database *account* can do. The web app connects with one runtime account;
-  individual end users do not need their own database logins.
+  `app_user.role` and `staff.role` columns and enforced by the application code.
+- **PostgreSQL roles** decide what a database account can do. The web app connects through one runtime account;
+  individual end users do not have their own database logins.
 
-## Application roles
+## Application roles mapped to database roles
 
-| Role | Stored in | Can do | Cannot do |
+| Application role | Responsibilities | Functions and data access | Intended database role |
 |---|---|---|---|
-| STUDENT / FACULTY | `app_user.role` | Register, view rooms and materials, check availability, submit requests, view and cancel own reservations, view own penalties | Approve requests, see other people's reservations, change rooms or materials |
-| STAFF | `staff.role` | View all reservations, approve/reject/complete/cancel, record and settle penalties, add/edit/delete rooms and materials, view dashboard reports | Submit reservation requests, manage accounts and departments |
-| ADMIN | `staff.role` | All staff actions, plus add departments, create staff accounts, deactivate staff, suspend or reactivate requesters | Deactivate their own account |
+| Requester (STUDENT or FACULTY) | Request rooms and materials for classes and events | Register, view rooms and materials, check availability, submit requests, view and cancel own reservations, view own penalties. Cannot see other people's reservations | The web app connects as `reserveit_app`, member of `app_runtime_grp` |
+| Staff (STAFF) | Review requests and run the catalogs | View all reservations, approve, reject, complete, and cancel them, record and settle penalties, add, edit, and delete rooms and materials, view dashboards | The web app connects as `reserveit_app`, member of `app_runtime_grp` |
+| Administrator (ADMIN) | Manage accounts and departments | Everything staff can do, plus add departments, create staff accounts, deactivate staff, suspend requesters | The web app connects as `reserveit_app`, member of `app_runtime_grp` |
+| Report viewer (outside the web app) | Read usage and penalty data | Read-only access to reservations, rooms, materials, and penalties. No emails or password hashes | `reserveit_reporter`, member of `app_readonly_grp` |
+| Database maintainer | Correct data, investigate problems | Read and change rows in all tables. Cannot change table structure or create roles | `reserveit_dba`, member of `app_admin_grp` |
+| Schema owner | Create tables, run setup and sample data | Owns the database and tables. Not a superuser | `reserveit_owner` (setup only, never used by the running app) |
+| PostgreSQL superuser | Create the roles once | Used only by `setup-roles`; password typed when asked | `postgres` (never used by the app) |
 
-Account states: requesters are ACTIVE or SUSPENDED (a suspended requester can log in but cannot submit requests);
-staff are ACTIVE or INACTIVE (an inactive staff member cannot log in).
+The three web-app roles share one database account because the app, not PostgreSQL, decides what each signed-in
+person may do. The database privileges cap what that account can ever do (see
+[access-requirements.md](access-requirements.md) for the table-by-table list and reasons).
 
-## PostgreSQL roles (`database/roles_setup.sql`)
+## PostgreSQL roles
 
-| PostgreSQL role | Type | Privileges | Used by |
+| Role | Type | Created by | Privileges |
 |---|---|---|---|
-| `app_readonly_grp` | Group (NOLOGIN) | CONNECT, SELECT on all tables | Reporting accounts |
-| `app_readwrite_grp` | Group (NOLOGIN) | Inherits read-only, plus INSERT, UPDATE, DELETE and sequence use | The web app |
-| `app_admin_grp` | Group (NOLOGIN) | Inherits read/write, plus ALL on tables and sequences | Database administrators (DDL stays with the table owner, `postgres`) |
-| `reserveit_app` | Login | Member of `app_readwrite_grp` | The Flask app (set in `.env`) |
-| `reserveit_reporter` | Login | Member of `app_readonly_grp` | Read-only reports and checking data |
+| `app_runtime_grp` | Group (NOLOGIN) | `roles_setup.sql` | Narrow, table by table: see access-requirements.md |
+| `app_readonly_grp` | Group (NOLOGIN) | `roles_setup.sql` | SELECT on report tables; people tables without email and password columns |
+| `app_admin_grp` | Group (NOLOGIN) | `roles_setup.sql` | SELECT, INSERT, UPDATE, DELETE on all tables; no structure changes |
+| `reserveit_app` | Login | `roles_setup.sql` | Member of `app_runtime_grp` |
+| `reserveit_reporter` | Login | `roles_setup.sql` | Member of `app_readonly_grp` |
+| `reserveit_dba` | Login | `roles_setup.sql` | Member of `app_admin_grp` |
+| `reserveit_owner` | Login | `roles_setup.sql` | Owns the database and tables; cannot create roles or databases |
 
-### Mapping
-
-| Application role | Database account used |
-|---|---|
-| STUDENT, FACULTY, STAFF, ADMIN (all via the web app) | `reserveit_app` (read/write group) |
-| Report viewer outside the app | `reserveit_reporter` (read-only group) |
-| Database administrator | `postgres` or a member of `app_admin_grp` |
-
-Application roles are enforced by the app code (`app/auth.py` decorators). Database roles are enforced by PostgreSQL.
-The app never gives end users direct database access.
+None of the five accounts is a superuser. Privileges on tables are applied by `database/grants.sql`.
+Connecting to the database is refused for anyone who is not granted CONNECT (the PUBLIC default is removed).
 
 ## Setup
 
-Run after the tables exist (`python manage.py init-db`):
-
 ```
-psql -U postgres -d grp01_appdb -v app_pw="'choose_a_password'" -v report_pw="'choose_another'" -f database/roles_setup.sql
+python manage.py setup-roles
+python manage.py init-db
+python manage.py seed
 ```
 
-The passwords are passed on the command line so they never appear in the repo. The script can be re-run safely.
+`setup-roles` reads the four passwords from your `.env` (`DB_PASSWORD`, `DB_OWNER_PASSWORD`, `DB_REPORT_PASSWORD`,
+`DB_DBA_PASSWORD`) and asks once for the `postgres` password. Passwords never appear in the repository.
 
-**Important:** if you run `python manage.py reset-db`, it recreates the schema and removes the grants. Run
-`roles_setup.sql` again afterwards.
+If you run `python manage.py reset-db`, the privileges are re-applied automatically.
 
 ## Verify
 
 ```
-psql -U reserveit_app -d grp01_appdb -c "SELECT count(*) FROM room;"      -- works
-psql -U reserveit_app -d grp01_appdb -c "DROP TABLE penalty;"             -- ERROR: must be owner
-psql -U reserveit_reporter -d grp01_appdb -c "DELETE FROM room;"          -- ERROR: permission denied
+python tests/access_test.py
+```
+
+Or try it by hand with psql:
+
+```
+psql -U reserveit_app      -d ReserveIT -c "SELECT count(*) FROM room;"           -- works
+psql -U reserveit_app      -d ReserveIT -c "DELETE FROM reservation;"             -- permission denied
+psql -U reserveit_reporter -d ReserveIT -c "SELECT password_hash FROM app_user;"  -- permission denied
+psql -U reserveit_dba      -d ReserveIT -c "DROP TABLE penalty;"                  -- must be owner
 ```
 
 ## Sample application accounts
