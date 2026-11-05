@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, badge with context %}
+{% block title %}Admin{% endblock %}
+{% block content %}
+<h1>Administration</h1>
+<p class="lead">Manage departments, staff accounts, and requester accounts.</p>
+
+<h2>Departments</h2>
+<form class="panel inline-form" method="post" action="{{ url_for('admin.add_department') }}">{{ csrf() }}
+  <div><label for="department_name">New department</label><input id="department_name" name="department_name" maxlength="100" required></div><button class="btn">Add department</button></form>
+<div class="scroll"><table><tr><th>Department</th><th class="num">Members</th></tr>
+  {% for d in departments %}<tr><td>{{ d.department_name }}</td><td class="num">{{ d.members }}</td></tr>{% endfor %}</table></div>
+
+<h2>Staff accounts</h2>
+<form class="panel inline-form" method="post" action="{{ url_for('admin.add_staff') }}">{{ csrf() }}
+  <div><label for="full_name">Full name</label><input id="full_name" name="full_name" maxlength="100" required></div>
+  <div><label for="s_email">Email</label><input id="s_email" name="email" type="email" maxlength="100" required></div>
+  <div><label for="s_password">Password</label><input id="s_password" name="password" type="password" minlength="8" required></div>
+  <div><label for="s_role">Role</label><select id="s_role" name="role"><option value="STAFF">Staff</option><option value="ADMIN">Administrator</option></select></div>
+  <button class="btn">Create staff account</button></form>
+<div class="scroll"><table><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr>
+  {% for s in staff %}<tr><td>{{ s.full_name }}</td><td>{{ s.email }}</td><td>{{ s.role|capitalize }}</td><td>{{ badge(s.status) }}</td>
+    <td>{% if s.staff_id != account.id %}<form class="inline" method="post" action="{{ url_for('admin.toggle_staff', staff_id=s.staff_id) }}">{{ csrf() }}<button class="btn quiet small">{{ 'Deactivate' if s.status == 'ACTIVE' else 'Reactivate' }}</button></form>{% endif %}</td></tr>{% endfor %}</table></div>
+
+<h2>Requester accounts</h2>
+{% if users %}
+<div class="scroll"><table><tr><th>Name</th><th>Email</th><th>Type</th><th>Department</th><th>Status</th><th></th></tr>
+  {% for u in users %}<tr><td>{{ u.first_name }} {{ u.last_name }}</td><td>{{ u.email }}</td><td>{{ u.role|capitalize }}</td><td>{{ u.department_name }}</td><td>{{ badge(u.status) }}</td>
+    <td><form class="inline" method="post" action="{{ url_for('admin.toggle_user', user_id=u.user_id) }}">{{ csrf() }}<button class="btn quiet small">{{ 'Suspend' if u.status == 'ACTIVE' else 'Reactivate' }}</button></form></td></tr>{% endfor %}</table></div>
+{% else %}<p class="empty">No one has registered yet.</p>{% endif %}
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, badge, when with context %}
+{% block title %}Reservation #{{ r.reservation_id }}{% endblock %}
+{% block content %}
+<h1>Reservation #{{ r.reservation_id }} {{ badge(r.status) }}</h1>
+<div class="panel">
+  <dl class="facts">
+    <dt>Room</dt><dd>{{ r.room_name }}, {{ r.building }}</dd>
+    <dt>When</dt><dd>{{ when(r) }}</dd>
+    <dt>Purpose</dt><dd>{{ r.purpose }}</dd>
+    <dt>Requested by</dt><dd>{{ r.requester }} ({{ r.requester_email }})</dd>
+    <dt>Reviewed by</dt><dd>{{ r.reviewer or 'Not reviewed yet' }}</dd>
+    <dt>Materials</dt><dd>{% if items %}{% for i in items %}{{ i.quantity_requested }} × {{ i.material_name }}{{ ', ' if not loop.last }}{% endfor %}{% else %}None requested{% endif %}</dd>
+  </dl>
+  <div class="actions">
+    {% if account.type == 'staff' and r.status == 'PENDING' %}
+      <form class="inline" method="post" action="{{ url_for('reservations.approve', rid=r.reservation_id) }}">{{ csrf() }}<button class="btn">Approve</button></form>
+      <form class="inline" method="post" action="{{ url_for('reservations.reject', rid=r.reservation_id) }}">{{ csrf() }}<button class="btn danger">Reject</button></form>
+    {% endif %}
+    {% if account.type == 'staff' and r.status == 'APPROVED' %}
+      <form class="inline" method="post" action="{{ url_for('reservations.complete', rid=r.reservation_id) }}">{{ csrf() }}<button class="btn">Mark completed</button></form>
+    {% endif %}
+    {% if r.status in ('PENDING', 'APPROVED') %}
+      <form class="inline" method="post" action="{{ url_for('reservations.cancel', rid=r.reservation_id) }}" onsubmit="return confirm('Cancel this reservation?')">{{ csrf() }}<button class="btn danger">Cancel reservation</button></form>
+    {% endif %}
+    <a class="btn quiet" href="{{ url_for('reservations.index') }}">Back to list</a>
+  </div>
+</div>
+
+<h2>Penalty</h2>
+{% if penalty %}
+<div class="panel"><dl class="facts">
+  <dt>Reason</dt><dd>{{ penalty.reason|replace('_', ' ')|capitalize }}</dd>
+  <dt>Amount</dt><dd>₱{{ '{:,.2f}'.format(penalty.amount) }}</dd>
+  <dt>Issued</dt><dd>{{ penalty.issue_date.strftime('%b %d, %Y') }}</dd>
+  <dt>Status</dt><dd>{{ badge(penalty.paid_status) }}{% if penalty.paid_date %} on {{ penalty.paid_date.strftime('%b %d, %Y') }}{% endif %}</dd>
+</dl>
+{% if account.type == 'staff' and penalty.paid_status == 'UNPAID' %}
+<form method="post" action="{{ url_for('reservations.mark_paid', pid=penalty.penalty_id) }}" class="actions">{{ csrf() }}
+  <input type="hidden" name="back" value="{{ url_for('reservations.detail', rid=r.reservation_id) }}"><button class="btn">Mark as paid</button></form>
+{% endif %}</div>
+{% elif account.type == 'staff' and r.status in ('APPROVED', 'COMPLETED') %}
+<form class="panel inline-form" method="post" action="{{ url_for('reservations.issue_penalty', rid=r.reservation_id) }}">
+  {{ csrf() }}
+  <div><label for="reason">Reason</label><select id="reason" name="reason" required>{% for x in reasons %}<option value="{{ x }}">{{ x|replace('_', ' ')|capitalize }}</option>{% endfor %}</select></div>
+  <div><label for="amount">Amount (₱)</label><input id="amount" name="amount" type="number" min="0" step="0.01" required></div>
+  <button class="btn">Record penalty</button>
+</form>
+{% else %}<p class="empty">No penalty on this reservation.</p>{% endif %}
+{% endblock %}

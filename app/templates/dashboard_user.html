@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge, when with context %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<h1>Hello, {{ account.name.split(' ')[0] }}</h1>
+<p class="lead">Check which rooms are free, request a room and materials, and follow your requests.</p>
+<div class="stats">
+  <div class="stat"><b>{{ upcoming|length }}</b><span>upcoming reservations</span></div>
+  <div class="stat {{ 'warn' if owed > 0 }}"><b>₱{{ '{:,.2f}'.format(owed) }}</b><span>unpaid penalties</span></div>
+</div>
+<div class="actions" style="margin:0 0 1rem"><a class="btn" href="{{ url_for('reservations.new') }}">Request a room</a><a class="btn quiet" href="{{ url_for('main.rooms') }}">Check room availability</a></div>
+<h2>Upcoming</h2>
+{% if upcoming %}
+<div class="scroll"><table>
+  <tr><th>When</th><th>Room</th><th>Status</th><th></th></tr>
+  {% for r in upcoming %}<tr><td>{{ when(r) }}</td><td>{{ r.room_name }}, {{ r.building }}</td><td>{{ badge(r.status) }}</td>
+    <td><a href="{{ url_for('reservations.detail', rid=r.reservation_id) }}">View</a></td></tr>{% endfor %}
+</table></div>
+{% else %}<p class="empty">You have no upcoming reservations. Request a room to get started.</p>{% endif %}
+{% endblock %}
