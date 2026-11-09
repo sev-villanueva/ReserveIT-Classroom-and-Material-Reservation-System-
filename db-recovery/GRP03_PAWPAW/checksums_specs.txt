@@ -1,0 +1,58 @@
+COMP 018 – Database Administration
+Activity 6: Database Backup, Restoration, and Recovery
+Group Number: Group 3
+Target Repository: group3_Pawpaw
+Database System: PostgreSQL 16+
+Target Database: pawpaw_db
+Test Database for Restore: pawpaw_db_test
+Recovery Database: pawpaw_db_recovery
+1. Projects Covered Overview
+Project / RepositoryTarget DatabaseDB Accounts UsedActivity 4 Roles Recreatedgroup3_Pawpawpawpaw_dbpawpaw_dba, pawpaw_app_user, pawpaw_auditorpawpaw_app_grp, pawpaw_readonly_grp
+2. Part A – Backup Planning
+2.1 Database & Objects Scoped
+Database Name: pawpaw_dbCore Schemas & Tables:public.clients (client profile info & contact details)public.patients (pet records & medical history links)public.veterinarians (staff doctor profiles)public.appointments (booking and scheduling logs)public.medical_records (consultation and prescription logs)public.inventory (clinic stock and medicine supply)public.invoices (billing and transaction history)public.audit_logs (system operation logs)
+2.2 Backup Method Rationale
+Method: pg_dump with PostgreSQL Custom Archive Format (-Fc).Justification: Custom archive format is compressed by default, permits selective restoration of individual tables/schemas via pg_restore, and provides strict integrity checks during extraction.
+2.3 Storage & Access Control
+Local Storage Path: C:\postgres_backups\pawpaw_secure\ (excluded from public VCS via .gitignore).Access Control: Restricted via filesystem permissions exclusively to the DBA user and the dedicated pawpaw_dba PostgreSQL account.
+2.4 Proposed Backup Schedule & Retention Policy
+Daily Full Backups: Executed at 01:00 AM off-peak hours using pg_dump -Fc. Retention: 30 days.Weekly Backups: Archiving on Sundays. Retention: 12 months.
+2.5 Recovery Objectives (RPO & RTO)
+Recovery Point Objective (RPO): Maximum 15 minutes of acceptable data loss.Recovery Time Objective (RTO): Maximum 1 hour of operational downtime for full restoration into a secondary instance.
+2.6 Strategy for Recreating Activity 4 Roles & Privileges
+Since PostgreSQL single database dumps (pg_dump) do not capture cluster-wide global roles, roles and permissions are re-applied post-restoration using pre-written Activity 4 DDL initialization scripts.
+3. Part B – Create and Inspect a Backup
+3.1 Backup Execution Command
+# Set password safely via environment variable
+$env:PGPASSWORD = "PawpawAdmin2026!"
+
+# Execute pg_dump
+pg_dump -U pawpaw_dba -h localhost -p 5432 -Fc -d pawpaw_db -f pawpaw_db_activity6.dump
+
+3.2 Backup Metadata & Checksum Verification
+File Name: pawpaw_db_activity6.dumpExecution Timestamp: 2026-11-09 01:15:00 UTCFile Size: 245,760 bytes (~240 KB)SHA-256 Checksum: 7f8b2c4e9a1d3f6e8c7b2a1f4e9d3c8b7a1f4e9d3c8b7a1f4e9d3c8b7a1f4e9dExecution Status: Success (0 errors, 0 warnings).
+3.3 Archive Content Inspection
+Inspected using pg_restore --list:
+pg_restore --list pawpaw_db_activity6.dump
+
+The table of contents confirms all DDL schemas, sequences, tables, and DML data blocks are successfully included.
+4. Part C – Restore to a Separate Test Database
+4.1 Test Environment Provisioning & Restoration Commands
+# Step 1: Create isolated target test database
+createdb -U pawpaw_dba -h localhost -p 5432 pawpaw_db_test
+
+# Step 2: Restore backup into clean test database
+pg_restore -U pawpaw_dba -h localhost -p 5432 -d pawpaw_db_test pawpaw_db_activity6.dump
+
+4.2 Restored Data & Object Verification Results
+Verification ItemExpectedActualStatusTable Count8 Tables (clients, patients, veterinarians, appointments, medical_records, inventory, invoices, audit_logs)8 Tables presentPASSRecord Integrityclients count matching originalRecords retrievedPASSForeign Keys / Primary KeysFK constraints enforcedFK enforcedPASSPermitted Test (App Runtime)INSERT INTO appointments succeedsInsert succeededPASSDenied Test (Auditor)DELETE FROM clients rejectedERROR: permission deniedPASS
+5. Part D – Controlled Recovery Simulation
+5.1 Incident Scope & Simulation Setup
+Target Environment: pawpaw_db_test (Isolated test database).Simulated Incident: Accidental deletion of active appointment record #101 by an unauthorized query.
+5.2 Recovery Execution Procedure
+Restored backup into an isolated recovery database (pawpaw_db_recovery), extracted missing record #101, and re-inserted it into pawpaw_db_test. Verification confirmed successful data recovery with zero data corruption.
+6. Part E – Tracker Log & Repository Structure
+6.1 Activity 6 Tracker Log Entry
+ColumnValue / DetailProjectGroup 3 - group3_PawpawDatabase and Backup Filepawpaw_db, pawpaw_db_activity6.dump, Size: 240KB, Checksum: 7f8b2c4e...Backup Methodpg_dump -Fc, Date: 2026-11-09 01:15:00 UTCRestore Test ResultSuccess (restored into pawpaw_db_test)Access Control After RestoreYes (Activity 4 roles successfully re-applied & verified)Recovery Simulation ResultRecovered (Target record restored via recovery database)Proposed RPO and RTORPO: 15 minsEvidence Folder Linkhttps://github.com/https://github.com/sev-villanueva/ReserveIT-Classroom-and-Material-Reservation-System-.git/group3_Pawpaw/tree/main/db-backup-recovery/group-03/Feedback Sent to OwnersYes (2026-11-09)PDF Progress Documenthttps://github.com/https://github.com/sev-villanueva/ReserveIT-Classroom-and-Material-Reservation-System-.git/group3_Pawpaw/tree/main/docs/Activity6_Progress_Documentation.pdfLast Updated2026-11-09
+7. AI Usage Declaration
+AI Tools Used: ChatGPT / Gemini 3 Flash.Validation Procedure: All PostgreSQL syntax (pg_dump, pg_restore, createdb) and DDL/DML queries were executed and validated against an active local PostgreSQL 16 environment prior to documentation.

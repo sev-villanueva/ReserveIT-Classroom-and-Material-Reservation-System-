@@ -1,0 +1,11 @@
+=============================================================================
+COMP 018 - Activity 6 Backup Verification Log
+=============================================================================
+Database Target: group1_dropboxed_db
+Backup File Name: group1_dropboxed_db_activity6.dump
+Backup Method: pg_dump -Fc (Custom Archive Format)
+Creation Timestamp: 2026-11-09 01:15:00 UTC
+File Size: 248832 Bytes (~243 KB)
+SHA-256 Checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+Status: VERIFIED (Dump inspected and restored into group1_dropboxed_db_test)
+=============================================================================

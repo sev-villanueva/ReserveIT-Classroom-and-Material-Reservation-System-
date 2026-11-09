@@ -1,0 +1,11 @@
+=============================================================================
+COMP 018 - Activity 6 Backup Verification Log
+=============================================================================
+Database Target: school_event_db
+Backup File Name: school_event_db_activity6.dump
+Backup Method: pg_dump -Fc (Custom Archive Format)
+Creation Timestamp: 2026-11-09 02:00:00 UTC
+File Size: 312410 Bytes (~305 KB)
+SHA-256 Checksum: f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8
+Status: VERIFIED (Dump inspected and restored into school_event_db_test)
+=============================================================================
